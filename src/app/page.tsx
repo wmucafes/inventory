@@ -4,9 +4,8 @@ import Image from "next/image";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 const WMU_DOMAIN = "wmich.edu";
-const OTP_LENGTH = 6;
 
-type AuthStep = "request" | "verify" | "app";
+type AuthStep = "request" | "app";
 type MasterInventoryItem = {
   sku: string;
   item_name: string;
@@ -71,9 +70,7 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
-  const [info, setInfo] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
   const [signedInEmail, setSignedInEmail] = useState("");
   const [signedInRole, setSignedInRole] = useState("");
   const [inventoryItems, setInventoryItems] = useState<MasterInventoryItem[]>([]);
@@ -106,7 +103,6 @@ export default function Home() {
   const [editRestricted, setEditRestricted] = useState(false);
 
   const normalizedEmail = useMemo(() => normalizeEmail(email), [email]);
-  const emailLooksValid = isWmuEmail(normalizedEmail);
   const appEmail = signedInEmail || normalizedEmail;
   const totalItems = inventoryItems.length;
   const lowStockItems = inventoryItems.filter((item) => Number(item.on_hand_qty) <= 24).length;
@@ -179,78 +175,26 @@ export default function Home() {
     };
   }, []);
 
-  const handleRequestOtp = async (event: FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    if (otpSent || isSubmitting) {
-      return;
-    }
-
-    if (!normalizedEmail) {
-      setError("Enter your WMU email address to continue.");
-      return;
-    }
-
-    if (!emailLooksValid) {
-      setError("Only @wmich.edu accounts are allowed.");
-      return;
-    }
+    if (isSubmitting) return;
+    if (!email.trim()) { setError("Enter your email address."); return; }
+    if (!otp) { setError("Enter your password."); return; }
 
     setIsSubmitting(true);
     setError("");
-    setInfo("");
 
     try {
-      const response = await fetch("/api/auth/request-otp", {
+      const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: normalizedEmail }),
-      });
-
-      const data = (await response.json()) as { error?: string; message?: string };
-
-      if (!response.ok) {
-        setError(data.error || "Unable to send code right now.");
-        return;
-      }
-
-      setOtpSent(true);
-      setAuthStep("verify");
-      setInfo("OTP sent successfully. Please check your WMU email inbox.");
-    } catch {
-      setError("Unable to send code right now.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleVerifyOtp = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (isSubmitting) {
-      return;
-    }
-
-    if (otp.length !== OTP_LENGTH) {
-      setError("Enter the 6-digit verification code.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError("");
-    setInfo("");
-
-    try {
-      const response = await fetch("/api/auth/verify-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: normalizedEmail, otp }),
+        body: JSON.stringify({ email: normalizedEmail, password: otp }),
       });
 
       const data = (await response.json()) as { error?: string; email?: string; role?: string; redirect?: string };
 
       if (!response.ok) {
-        setError(data.error || "Unable to verify code right now.");
+        setError(data.error || "Unable to sign in right now.");
         return;
       }
 
@@ -263,21 +207,18 @@ export default function Home() {
       setSignedInRole(data.role ?? "");
       setAuthStep("app");
     } catch {
-      setError("Unable to verify code right now.");
+      setError("Unable to sign in right now.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-
   const resetRequestState = () => {
     setAuthStep("request");
-    setOtpSent(false);
     setIsSubmitting(false);
     setEmail("");
     setOtp("");
     setError("");
-    setInfo("");
     setSignedInEmail("");
   };
 
@@ -1270,90 +1211,45 @@ export default function Home() {
         </div>
 
         {authStep === "request" && (
-          <form className="space-y-4" onSubmit={handleRequestOtp}>
-          <label className="block text-sm font-medium text-stone-700" htmlFor="email">
-            WMU Email Address
-          </label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="broncos@wmich.edu"
-            disabled={otpSent}
-            className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-[#8a6331] focus:ring-3 focus:ring-[#d9b98a66] disabled:cursor-not-allowed disabled:bg-stone-100"
-          />
-
-          {!!email && !emailLooksValid && !otpSent && (
-            <p className="text-sm font-medium text-amber-700">
-              Only addresses ending in @wmich.edu can continue.
-            </p>
-          )}
-
-          {!!error && <p className="text-sm font-medium text-red-700">{error}</p>}
-          {!!info && <p className="text-sm font-medium text-emerald-700">{info}</p>}
-
-          <button
-            type="submit"
-            disabled={otpSent || isSubmitting}
-            className="w-full rounded-xl bg-[#4a2f14] px-4 py-3 text-sm font-semibold text-[#f8e8c5] transition hover:bg-[#5c3a18] disabled:cursor-not-allowed disabled:bg-[#8a6f4e]"
-          >
-            {otpSent ? "OTP Sent" : isSubmitting ? "Sending..." : "Send Verification Code"}
-          </button>
-
-          {otpSent && (
-            <button
-              type="button"
-              onClick={resetRequestState}
-              className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm font-semibold text-stone-700 transition hover:border-stone-400 hover:text-stone-900"
-            >
-              Reset for Demo
-            </button>
-          )}
-          </form>
-        )}
-
-        {authStep === "verify" && (
-          <form className="space-y-4" onSubmit={handleVerifyOtp}>
+          <form className="space-y-4" onSubmit={handleLogin}>
             <div>
-              <p className="text-sm text-stone-600">
-                Enter the 6-digit code sent for <span className="font-semibold">{normalizedEmail}</span>.
-              </p>
+              <label className="block text-sm font-medium text-stone-700 mb-1.5" htmlFor="email">
+                Email Address
+              </label>
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="broncos@wmich.edu"
+                className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-[#8a6331] focus:ring-3 focus:ring-[#d9b98a66]"
+              />
             </div>
 
-            <label className="block text-sm font-medium text-stone-700" htmlFor="otp">
-              Verification Code
-            </label>
-            <input
-              id="otp"
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={OTP_LENGTH}
-              value={otp}
-              onChange={(event) => setOtp(event.target.value.replace(/\D/g, ""))}
-              placeholder="000000"
-              className="w-full rounded-xl border border-stone-300 px-4 py-3 text-center text-xl tracking-[0.35em] outline-none transition focus:border-[#8a6331] focus:ring-3 focus:ring-[#d9b98a66]"
-            />
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1.5" htmlFor="password">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                value={otp}
+                onChange={(event) => setOtp(event.target.value)}
+                placeholder="••••••••"
+                className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-[#8a6331] focus:ring-3 focus:ring-[#d9b98a66]"
+              />
+            </div>
 
             {!!error && <p className="text-sm font-medium text-red-700">{error}</p>}
-            {!!info && <p className="text-sm font-medium text-emerald-700">{info}</p>}
 
             <button
               type="submit"
               disabled={isSubmitting}
               className="w-full rounded-xl bg-[#4a2f14] px-4 py-3 text-sm font-semibold text-[#f8e8c5] transition hover:bg-[#5c3a18] disabled:cursor-not-allowed disabled:bg-[#8a6f4e]"
             >
-              {isSubmitting ? "Verifying..." : "Verify and Continue"}
-            </button>
-
-            <button
-              type="button"
-              onClick={resetRequestState}
-              className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm font-semibold text-stone-700 transition hover:border-stone-400 hover:text-stone-900"
-            >
-              Use a Different Email
+              {isSubmitting ? "Signing in..." : "Sign In"}
             </button>
           </form>
         )}

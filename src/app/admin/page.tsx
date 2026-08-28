@@ -46,12 +46,19 @@ export default function AdminPage() {
   const [newEmail, setNewEmail] = useState("");
   const [newRole, setNewRole] = useState<UserRole>("cafe");
   const [newCafeId, setNewCafeId] = useState<number | null>(null);
+  const [newPassword, setNewPassword] = useState("");
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
 
   // Revoke
   const [confirmRevoke, setConfirmRevoke] = useState<string | null>(null);
   const [revoking, setRevoking] = useState<string | null>(null);
+
+  // Reset password
+  const [resetEmail, setResetEmail] = useState<string | null>(null);
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetting, setResetting] = useState(false);
+  const [resetError, setResetError] = useState("");
 
   useEffect(() => {
     async function init() {
@@ -89,7 +96,7 @@ export default function AdminPage() {
       const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: newEmail.trim(), role: newRole, cafe_id: newRole === "cafe" ? newCafeId : null }),
+        body: JSON.stringify({ email: newEmail.trim(), role: newRole, cafe_id: newRole === "cafe" ? newCafeId : null, password: newPassword }),
       });
       const data = (await res.json()) as { user?: User; error?: string };
       if (!res.ok) { setAddError(data.error ?? "Unable to add user."); return; }
@@ -105,6 +112,7 @@ export default function AdminPage() {
       setNewEmail("");
       setNewRole("cafe");
       setNewCafeId(null);
+      setNewPassword("");
     } catch {
       setAddError("Unable to add user right now.");
     } finally {
@@ -128,6 +136,27 @@ export default function AdminPage() {
       setError("Unable to revoke access right now.");
     } finally {
       setRevoking(null);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetEmail || !resetPassword) return;
+    setResetError("");
+    setResetting(true);
+    try {
+      const res = await fetch("/api/admin/users/password", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: resetEmail, password: resetPassword }),
+      });
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) { setResetError(data.error ?? "Unable to reset password."); return; }
+      setResetEmail(null);
+      setResetPassword("");
+    } catch {
+      setResetError("Unable to reset password right now.");
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -207,6 +236,16 @@ export default function AdminPage() {
                 </select>
               </div>
             )}
+            <div className="w-40">
+              <label className="block text-xs font-semibold text-stone-500 mb-1.5">Password</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Min 6 characters"
+                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-[#c49a3c] focus:ring-2 focus:ring-[#c49a3c44]"
+              />
+            </div>
             <button
               type="submit"
               disabled={adding}
@@ -216,6 +255,7 @@ export default function AdminPage() {
             </button>
           </form>
           {!!addError && <p className="px-5 pb-3 text-sm text-red-600">{addError}</p>}
+          {!!resetError && <p className="px-5 pb-3 text-sm text-red-600">{resetError}</p>}
         </div>
 
         {/* Users table */}
@@ -230,6 +270,7 @@ export default function AdminPage() {
                 <th className="px-5 py-3 text-left">Email</th>
                 <th className="px-5 py-3 text-left">Role</th>
                 <th className="px-5 py-3 text-left">Added</th>
+                <th className="px-5 py-3 text-right">Password</th>
                 <th className="px-5 py-3 text-right">Access</th>
               </tr>
             </thead>
@@ -243,6 +284,36 @@ export default function AdminPage() {
                     </span>
                   </td>
                   <td className="px-5 py-3 text-stone-500">{formatDate(user.created_at)}</td>
+                  <td className="px-5 py-3 text-right">
+                    {resetEmail === user.email ? (
+                      <span className="flex items-center justify-end gap-1">
+                        <input
+                          type="password"
+                          value={resetPassword}
+                          onChange={(e) => setResetPassword(e.target.value)}
+                          placeholder="New password"
+                          className="rounded border border-stone-300 px-2 py-1 text-xs outline-none focus:border-[#c49a3c] w-32"
+                        />
+                        <button
+                          onClick={handleResetPassword}
+                          disabled={resetting}
+                          className="text-xs font-semibold text-green-600 hover:text-green-800 transition disabled:opacity-50"
+                        >
+                          {resetting ? "Saving..." : "Save"}
+                        </button>
+                        <button onClick={() => { setResetEmail(null); setResetPassword(""); setResetError(""); }} className="text-xs font-semibold text-stone-400 hover:text-stone-700 transition">
+                          Cancel
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => { setResetEmail(user.email); setResetPassword(""); setResetError(""); }}
+                        className="text-xs font-semibold text-stone-400 hover:text-stone-700 transition"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </td>
                   <td className="px-5 py-3 text-right">
                     {user.email === "benwin.george@wmich.edu" ? (
                       <span className="text-xs text-stone-300">Protected</span>

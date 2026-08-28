@@ -9,7 +9,8 @@ type AuditAction =
   | "request_recorded"
   | "request_deleted"
   | "access_granted"
-  | "access_revoked";
+  | "access_revoked"
+  | "password_reset";
 
 type AuditEntityType = "item" | "stock_request" | "user_access";
 
