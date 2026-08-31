@@ -22,7 +22,6 @@ Internal web app for Western Michigan University Dining Services. Manages the co
 - **Framework:** Next.js 16 (App Router, TypeScript)
 - **Database:** PostgreSQL on [Neon](https://neon.tech) (serverless)
 - **Auth:** Custom session-based (bcrypt passwords, cookie sessions)
-- **Email:** [Brevo](https://brevo.com) transactional API (300 emails/day free tier)
 - **Hosting:** [Vercel](https://vercel.com)
 - **Styling:** Tailwind CSS
 
@@ -45,10 +44,6 @@ Create a `.env.local` file in the project root:
 
 ```env
 DATABASE_URL=postgresql://...   # Neon connection string
-BREVO_API_KEY=xkeysib-...       # Brevo API key
-BREVO_FROM_EMAIL=ds-cafe@wmich.edu
-BREVO_FROM_NAME=WMU Dining Services
-SESSION_SECRET=a-long-random-string
 ```
 
 ### Run dev server
@@ -169,10 +164,6 @@ Set these under **Project → Settings → Environment Variables**:
 | Variable | Description |
 |----------|-------------|
 | `DATABASE_URL` | Neon PostgreSQL connection string |
-| `BREVO_API_KEY` | Brevo transactional email API key |
-| `BREVO_FROM_EMAIL` | Sender email address |
-| `BREVO_FROM_NAME` | Sender display name |
-| `SESSION_SECRET` | Secret used to sign session tokens |
 
 ---
 
@@ -182,7 +173,6 @@ Set these under **Project → Settings → Environment Variables**:
 |---------|---------|
 | Neon (database) | Commissary Gmail account |
 | Vercel (hosting) | Commissary Gmail account |
-| Brevo (email) | Commissary Gmail account |
 | GitHub (repo) | Commissary Gmail account |
 
 ---
