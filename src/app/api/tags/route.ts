@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
+import { requireRole } from "@/lib/require-role";
 import { getSession } from "@/lib/session-store";
 import { logAudit } from "@/lib/audit";
 
@@ -20,9 +21,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const token = request.cookies.get("wmu_inventory_session")?.value;
-  const session = await getSession(token);
-  if (!session || session.role !== "admin") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { session, error: authError } = await requireRole(request, ["admin"]);
+  if (authError) return authError;
 
   const body = (await request.json()) as { name?: string };
   const name = body.name?.trim();
@@ -49,9 +49,8 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const token = request.cookies.get("wmu_inventory_session")?.value;
-  const session = await getSession(token);
-  if (!session || session.role !== "admin") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { session, error: authError } = await requireRole(request, ["admin"]);
+  if (authError) return authError;
 
   const body = (await request.json()) as { id?: number };
   if (!body.id) return NextResponse.json({ error: "Tag ID is required." }, { status: 400 });

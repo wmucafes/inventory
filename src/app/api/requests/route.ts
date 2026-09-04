@@ -1,16 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
-import { getSession } from "@/lib/session-store";
+import { requireRole } from "@/lib/require-role";
 import { logAudit } from "@/lib/audit";
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get("wmu_inventory_session")?.value;
-    const session = await getSession(token);
-
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { session, error } = await requireRole(request, ["cafe", "driver", "admin", "commissary"]);
+    if (error) return error;
 
     const body = (await request.json()) as {
       items: { sku: string; qty: number }[];

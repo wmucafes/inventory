@@ -315,7 +315,7 @@ export default function AdminPage() {
                     )}
                   </td>
                   <td className="px-5 py-3 text-right">
-                    {user.email === "benwin.george@wmich.edu" ? (
+                    {user.email === "gregory.macleery@wmich.edu" ? (
                       <span className="text-xs text-stone-300">Protected</span>
                     ) : confirmRevoke === user.email ? (
                       <span className="flex items-center justify-end gap-1 text-sm">

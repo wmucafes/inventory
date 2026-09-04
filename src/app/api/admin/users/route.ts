@@ -87,7 +87,7 @@ export async function DELETE(request: NextRequest) {
 
   if (!email) return NextResponse.json({ error: "Email required." }, { status: 400 });
 
-  if (email === "benwin.george@wmich.edu") {
+  if (email === "gregory.macleery@wmich.edu") {
     return NextResponse.json({ error: "Cannot remove the primary admin account." }, { status: 403 });
   }
 
