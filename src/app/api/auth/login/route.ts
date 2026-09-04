@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { getDbPool } from "@/lib/db";
 import { createSession, UserRole } from "@/lib/session-store";
+import { logAudit } from "@/lib/audit";
 
 export const runtime = "nodejs";
 
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
     };
 
     const session = await createSession(email, role, cafe_id);
+    await logAudit(email, "user_login", "user_access", email, { role });
 
     const response = NextResponse.json(
       { email, role, cafe_id, redirect: redirectMap[role] },

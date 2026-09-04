@@ -10,9 +10,12 @@ type AuditAction =
   | "request_deleted"
   | "access_granted"
   | "access_revoked"
-  | "password_reset";
+  | "password_reset"
+  | "user_login"
+  | "tag_created"
+  | "tag_deleted";
 
-type AuditEntityType = "item" | "stock_request" | "user_access";
+type AuditEntityType = "item" | "stock_request" | "user_access" | "tag";
 
 export async function logAudit(
   actorEmail: string,

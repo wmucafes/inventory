@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
 import { getSession } from "@/lib/session-store";
+import { logAudit } from "@/lib/audit";
 
 export async function GET(request: NextRequest) {
   const token = request.cookies.get("wmu_inventory_session")?.value;
@@ -36,7 +37,9 @@ export async function POST(request: NextRequest) {
       `INSERT INTO tags (name, slug) VALUES ($1, $2) RETURNING id, name, slug`,
       [name, slug],
     );
-    return NextResponse.json({ tag: { ...result.rows[0], item_count: "0" } }, { status: 201 });
+    const tag = result.rows[0];
+    await logAudit(session.email, "tag_created", "tag", tag.id, { name: tag.name, slug: tag.slug });
+    return NextResponse.json({ tag: { ...tag, item_count: "0" } }, { status: 201 });
   } catch (err: unknown) {
     const pg = err as { code?: string };
     if (pg.code === "23505") return NextResponse.json({ error: "A tag with that name already exists." }, { status: 409 });
@@ -54,7 +57,9 @@ export async function DELETE(request: NextRequest) {
   if (!body.id) return NextResponse.json({ error: "Tag ID is required." }, { status: 400 });
 
   const pool = getDbPool();
-  const result = await pool.query(`DELETE FROM tags WHERE id = $1 RETURNING id`, [body.id]);
-  if (result.rowCount === 0) return NextResponse.json({ error: "Tag not found." }, { status: 404 });
+  const tagRow = await pool.query<{ id: number; name: string; slug: string }>(`SELECT id, name, slug FROM tags WHERE id = $1`, [body.id]);
+  if (tagRow.rowCount === 0) return NextResponse.json({ error: "Tag not found." }, { status: 404 });
+  await pool.query(`DELETE FROM tags WHERE id = $1`, [body.id]);
+  await logAudit(session.email, "tag_deleted", "tag", body.id, { name: tagRow.rows[0].name, slug: tagRow.rows[0].slug });
   return NextResponse.json({ ok: true }, { status: 200 });
 }

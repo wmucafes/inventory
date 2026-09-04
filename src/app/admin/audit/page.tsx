@@ -26,6 +26,10 @@ const ACTION_LABELS: Record<string, string> = {
   request_deleted: "Request Deleted",
   access_granted: "Access Granted",
   access_revoked: "Access Revoked",
+  password_reset: "Password Reset",
+  user_login: "User Login",
+  tag_created: "Tag Created",
+  tag_deleted: "Tag Deleted",
 };
 
 const ACTION_COLORS: Record<string, string> = {
@@ -38,13 +42,18 @@ const ACTION_COLORS: Record<string, string> = {
   request_deleted: "bg-red-100 text-red-800 border-red-200",
   access_granted: "bg-indigo-100 text-indigo-800 border-indigo-200",
   access_revoked: "bg-orange-100 text-orange-800 border-orange-200",
+  password_reset: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  user_login: "bg-sky-100 text-sky-800 border-sky-200",
+  tag_created: "bg-green-100 text-green-800 border-green-200",
+  tag_deleted: "bg-red-100 text-red-800 border-red-200",
 };
 
 const FILTER_OPTIONS = [
   { value: "all", label: "All" },
   { value: "item", label: "Inventory" },
   { value: "stock_request", label: "Requests" },
-  { value: "user_access", label: "Access" },
+  { value: "user_access", label: "Access & Auth" },
+  { value: "tag", label: "Tags" },
 ];
 
 function formatDate(iso: string) {
@@ -73,6 +82,14 @@ function summarizeDetails(action: string, details: Record<string, unknown>): str
       return `${details.target_email} → ${details.role}`;
     case "access_revoked":
       return `${details.target_email}`;
+    case "password_reset":
+      return `Password reset for ${details.target_email}`;
+    case "user_login":
+      return `Logged in as ${details.role}`;
+    case "tag_created":
+      return `"${details.name}" (${details.slug})`;
+    case "tag_deleted":
+      return `"${details.name}" (${details.slug})`;
     default:
       return JSON.stringify(details);
   }

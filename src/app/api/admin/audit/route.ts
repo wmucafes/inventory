@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   const limit = 50;
   const offset = (page - 1) * limit;
 
-  const validFilters = ["all", "item", "stock_request", "user_access"];
+  const validFilters = ["all", "item", "stock_request", "user_access", "tag"];
   const entityFilter = validFilters.includes(filter) && filter !== "all" ? filter : null;
 
   const pool = getDbPool();
