@@ -148,7 +148,7 @@ node scripts/set-password.mjs <email> <new-password> "<DATABASE_URL>"
 ### Roles and restrictions
 
 - Only `@wmich.edu` emails are allowed.
-- The primary admin account (`benwin.george@wmich.edu`) cannot be revoked from the UI.
+- The primary admin account (`gregory.macleery@wmich.edu`) cannot be revoked from the UI.
 - Admins cannot remove their own access.
 
 ---
@@ -174,6 +174,33 @@ Set these under **Project → Settings → Environment Variables**:
 | Neon (database) | Commissary Gmail account |
 | Vercel (hosting) | Commissary Gmail account |
 | GitHub (repo) | Commissary Gmail account |
+
+---
+
+## Hidden Pages
+
+These pages have no navigation button — they are accessed by typing the URL directly. They are intentional.
+
+| URL | Access | Purpose |
+|-----|--------|---------|
+| `/admin/audit` | Admin only | Full audit log of all system events, paginated, filterable by entity type |
+| `/admin/tags` | Admin only | Create and delete tags that can be assigned to inventory items |
+
+---
+
+## Audit Log
+
+The audit log (`/admin/audit`) records every significant action automatically:
+
+| Event | Triggered by |
+|-------|-------------|
+| `item_added` / `item_edited` / `item_deleted` | Inventory changes |
+| `request_created` / `request_fulfilled` / `request_recorded` / `request_deleted` | Request lifecycle |
+| `access_granted` / `access_revoked` / `password_reset` | User management |
+| `user_login` | Every successful login |
+| `tag_created` / `tag_deleted` | Tag management |
+
+To add a new audit event: add the action to the `AuditAction` union in `src/lib/audit.ts`, call `logAudit()` in the route, and add the label/color/summary in `src/app/admin/audit/page.tsx`.
 
 ---
 
